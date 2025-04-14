@@ -4,8 +4,10 @@ from gym_minigrid.register import register
 
 class GoToDoorEnv(MiniGridEnv):
     """
-    Custom MiniGrid environment where the agent must navigate toward a red door.
-    The environment is defined on an 8x8 grid.
+    Custom MiniGrid environment where the agent must navigate toward a red door on an 8x8 grid.
+    Reward shaping is applied:
+      - At each step, the agent gets a small positive reward if it moves closer to the door.
+      - When the agent reaches the door, a bonus reward is provided.
     """
     def __init__(self, size=8):
         super().__init__(
@@ -32,14 +34,26 @@ class GoToDoorEnv(MiniGridEnv):
         self.mission = "go to the red door"
 
     def step(self, action):
+        # Compute the Manhattan distance from the agent to the door before taking the action.
+        old_distance = abs(self.agent_pos[0] - self.door_pos[0]) + abs(self.agent_pos[1] - self.door_pos[1])
+        
+        # Take the action using the parent's step() method.
         obs, reward, done, info = super().step(action)
-        # If the agent reaches the door, grant reward and finish the episode.
+        
+        # Compute the new Manhattan distance after the action.
+        new_distance = abs(self.agent_pos[0] - self.door_pos[0]) + abs(self.agent_pos[1] - self.door_pos[1])
+        
+        # Shaping reward: reward is proportional to the reduction in distance (scaled by 0.1).
+        shaping_reward = (old_distance - new_distance) * 0.1
+        
+        # If the agent reaches the door, assign a bonus reward.
         if self.agent_pos == self.door_pos:
-            reward = self._reward()
+            shaping_reward = 1.0  # Terminal bonus.
             done = True
-        return obs, reward, done, info
+        
+        return obs, shaping_reward, done, info
 
-# Register the environment with Gymnasium.
+# Register the environment using Gymnasium's registration.
 register(
     id='MiniGrid-GoToDoor-8x8-v0',
     entry_point='tasks.goto_door_env:GoToDoorEnv'
