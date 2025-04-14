@@ -1,3 +1,9 @@
 minigrid
 stable-baselines3
 opencv-python
+gymnasium
+gym-minigrid
+torch
+numpy
+matplotlib
+pandas
